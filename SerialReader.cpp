@@ -1,6 +1,7 @@
+$cppCode = @'
 #include "SerialReader.h"
 #include <QJniEnvironment>
-#include <unistd.h>
+#include <QCoreApplication>
 
 static SerialReader* s_instance = nullptr;
 SerialReader* g_serialReader() { return s_instance; }
@@ -37,10 +38,7 @@ void SerialReader::disconnectPort() {
         m_opener.callMethod<void>("closePort");
     }
 #endif
-    if (m_fd >= 0) {
-        ::close(m_fd);
-        m_fd = -1;
-    }
+    m_fd = -1;
     m_buf.clear();
     emit statusChanged("Отключено");
 }
@@ -86,4 +84,18 @@ Java_com_example_usbterm_UsbPortOpener_onPortError(JNIEnv*, jclass, jstring msg)
         g_serialReader()->handleError(s);
     }, Qt::QueuedConnection);
 }
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_usbterm_UsbPortOpener_onDataReceived(JNIEnv* env, jclass, jbyteArray data) {
+    if (!g_serialReader() || !data) return;
+    jsize len = env->GetArrayLength(data);
+    if (len <= 0) return;
+    QByteArray chunk(len, Qt::Uninitialized);
+    env->GetByteArrayRegion(data, 0, len, reinterpret_cast<jbyte*>(chunk.data()));
+    QMetaObject::invokeMethod(g_serialReader(), [chunk]() {
+        g_serialReader()->handleBytes(chunk);
+    }, Qt::QueuedConnection);
+}
 #endif
+'@
+[System.IO.File]::WriteAllText("C:\p\usb\SerialReader.cpp", $cppCode, (New-Object System.Text.UTF8Encoding $false))

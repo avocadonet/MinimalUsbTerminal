@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <usb-device vendor-id="5418" /> <!-- 0x152A Septentrio -->
+    <!-- Septentrio VID 0x152A (в десятичном виде = 5418) -->
+    <usb-device vendor-id="5418" />
+    <!-- Любое стандартное USB CDC ACM устройство (класс 2) -->
     <usb-device class="2" />
 </resources>
